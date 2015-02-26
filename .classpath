@@ -4,5 +4,6 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="C:/JavaResources/spigot-1.8.jar"/>
 	<classpathentry kind="lib" path="C:/JavaResources/sqlite-jdbc-3.8.7.jar"/>
+	<classpathentry kind="lib" path="C:/JavaResources/gson-2.3.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
