@@ -1,0 +1,3 @@
+name: DayelleCraftMain
+version: 0.1
+main: com.dayellecraft.mc1_8.plugin.mainplugin.main.Main
