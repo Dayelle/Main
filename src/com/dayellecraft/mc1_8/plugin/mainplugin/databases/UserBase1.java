@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-
 public class UserBase1 {
 //UUID -> Username Base
 	private static UserDatabase ub1;
@@ -53,6 +52,7 @@ public class UserBase1 {
 			contains = connection.prepareStatement("select * from uuid WHERE jsonstore LIKE %?%");
 			select1 = connection.prepareStatement("select * from Users WHERE uuid = ?");
 			updateJson = connection.prepareStatement("UPDATE Users SET jsonstore = ? WHERE uuid = ?");
+			insert = connection.prepareStatement("insert into Users values(?,?)");
 		}
 		
 		private PreparedStatement getAll; //Gets Every User
@@ -61,6 +61,44 @@ public class UserBase1 {
 		private PreparedStatement contains; //For 
 		private PreparedStatement select1;
 		private PreparedStatement updateJson;
+		private PreparedStatement insert;
+		
+		
+
+		/*Get Users*/public List<User> getUsers(){
+			List<User> list = new ArrayList<User>();
+			try{
+				ResultSet rs = getAll.executeQuery();
+				while(rs.next()){
+					list.add(new User(UUID.fromString(rs.getString("uuid")),rs.getString("jsonstore")));
+				}
+				rs = null;
+				return list;
+			}catch(Exception e){}
+			return null;
+		}
+		/*Delete User*/public boolean deleteUser(String where, String what) {
+			try{
+				delete.setString(1, where);
+				delete.setString(2, what);
+				delete.executeUpdate();
+				return true;
+			}catch(Exception e){e.printStackTrace();}
+			return false;
+		}		
+		/*Contains*/public List<User> Contains(String compare){
+			List<User> list = new ArrayList<User>();
+			try{
+				contains.setString(1, compare);
+				ResultSet rs = contains.executeQuery();
+				while(rs.next()){
+					list.add(new User(UUID.fromString(rs.getString("uuid")),rs.getString("jsonstore")));
+				}
+				rs = null;
+				return list;
+			}catch(Exception e){}
+			return null;
+		}
 		
 		/*
 		public void prepareStatements() throws SQLException {
