@@ -1,0 +1,1 @@
+This is the main plugin of DayelleCraft. It'll have the main DataBase for UUID -> Username. It will also have other cool features, I think. Actually it might only have the DataBase for UUID -> Username
