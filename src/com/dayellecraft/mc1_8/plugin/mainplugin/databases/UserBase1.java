@@ -12,23 +12,70 @@ import java.util.List;
 import java.util.UUID;
 
 public class UserBase1 {
-//UUID -> Username Base
+
 	private static UserDatabase ub1;
 	@Deprecated public static UserDatabase getUserBase(){return ub1;} //Only Use For Direct Testing! Not Thread Safe!
 	@Deprecated public static void setUserBase1(UserDatabase ub1){UserBase1.ub1 = ub1;} //Only Use For Direct Testing! Not Thread Safe!
-	
-	public static void Create(File f) throws ClassNotFoundException, SQLException {
+
+	private UserBase1(){}
+
+	public static void connect(File f) throws ClassNotFoundException, SQLException {
 		ub1 = new UserDatabase(f);
 	}
-	
-	private UserBase1(File f){
-		
+
+	/*Get Users*/public List<User> getUsers(){
+		synchronized(ub1){
+			return ub1.getUsers();
+		}
 	}
-	
-	
-	
-	
+	/*Get User*/public User getUser(UUID uuid){
+		synchronized(ub1){
+			return ub1.getUser(uuid);
+		}
+	}
+	/*Get User*/public User getUser(String uuid){
+		synchronized(ub1){
+			return ub1.getUser(uuid);
+		}
+	}
+	/*DeleteUser*/public boolean deleteUser(UUID uuid){
+		synchronized(ub1){
+			return ub1.deleteUser(uuid);
+		}
+	}
+	/*Delete User*/public boolean deleteUser(String uuid) {
+		synchronized(ub1){
+			return ub1.deleteUser(uuid);
+		}
+	}		
+	/*Contains*/public List<User> contains(String compare){
+		synchronized(ub1){
+			return ub1.contains(compare);
+		}
+	}
+	/*Create User*/public boolean createUser(UUID uuid, String jsonStore){
+		synchronized(ub1){
+			return ub1.createUser(uuid, jsonStore);
+		}
+	}
+	/*Create User*/public boolean createUser(String uuid, String jsonStore){
+		synchronized(ub1){
+			return ub1.createUser(uuid, jsonStore);
+		}
+	}
+	/*Update JSON*/public boolean updateJson(UUID uuid, String newJson){
+		synchronized(ub1){
+			return ub1.updateJson(uuid, newJson);
+		}
+	}
+	/*Update JSON*/public boolean updateJson(String uuid, String newJson){
+		synchronized(ub1){
+			return ub1.updateJson(uuid, newJson);
+		}
+	}
+
 	public static class UserDatabase {
+
 		private Statement statement;
 		public Statement getStatement(){return statement;}
 
@@ -42,28 +89,26 @@ public class UserBase1 {
 			connection = DriverManager.getConnection("jdbc:sqlite:"+f.getAbsolutePath());
 			statement = connection.createStatement();
 			statement.setQueryTimeout(30);  // set timeout to 30 sec.
-			statement.executeUpdate("create table if not exists Users (UNIQUE uuid string, jsonstore string)");
+			statement.executeUpdate("create table if not exists Users (uuid string, jsonstore string)");
 			prepareStatements();
 		}
-		
+
 		public void prepareStatements() throws SQLException {
-			getAll = connection.prepareStatement("select * from uuid");
-			delete = connection.prepareStatement("delete from Users WHERE ? = ?");
-			contains = connection.prepareStatement("select * from uuid WHERE jsonstore LIKE %?%");
+			getAll = connection.prepareStatement("select * from Users");
+			delete = connection.prepareStatement("delete from Users WHERE uuid = ?");
+			contains = connection.prepareStatement("select * from Users WHERE jsonstore LIKE ?");
 			select1 = connection.prepareStatement("select * from Users WHERE uuid = ?");
 			updateJson = connection.prepareStatement("UPDATE Users SET jsonstore = ? WHERE uuid = ?");
 			insert = connection.prepareStatement("insert into Users values(?,?)");
 		}
-		
+
 		private PreparedStatement getAll; //Gets Every User
 		private PreparedStatement delete; //Deletes A User, MultiType Checker
-		//private PreparedStatement deleteWhereContains; //delete * from uuid WHERE ? LIKE %?%
+		//private PreparedStatement deleteWhereContains; //delete * from users WHERE jsonstore LIKE %?%
 		private PreparedStatement contains; //For 
 		private PreparedStatement select1;
 		private PreparedStatement updateJson;
 		private PreparedStatement insert;
-		
-		
 
 		/*Get Users*/public List<User> getUsers(){
 			List<User> list = new ArrayList<User>();
@@ -74,228 +119,110 @@ public class UserBase1 {
 				}
 				rs = null;
 				return list;
-			}catch(Exception e){}
+			}catch(Exception e){e.printStackTrace();}
 			return null;
 		}
-		/*Delete User*/public boolean deleteUser(String where, String what) {
+		/*Get User*/public User getUser(UUID uuid){
+			return getUser(uuid.toString());
+		}
+		/*Get User*/public User getUser(String uuid){
+			ResultSet rs;
 			try{
-				delete.setString(1, where);
-				delete.setString(2, what);
+				select1.setString(1, uuid);
+				rs = select1.executeQuery();
+				while(rs.next()){
+					return new User(UUID.fromString(rs.getString("uuid")),rs.getString("jsonstore"));
+				}
+			}catch(Exception e){e.printStackTrace();}
+			finally{rs = null;}
+			return null;
+		}
+		/*DeleteUser*/public boolean deleteUser(UUID uuid){
+			return deleteUser(uuid.toString());
+		}
+		/*Delete User*/public boolean deleteUser(String uuid) {
+			try{
+				delete.setString(1, uuid);
 				delete.executeUpdate();
 				return true;
 			}catch(Exception e){e.printStackTrace();}
 			return false;
 		}		
-		/*Contains*/public List<User> Contains(String compare){
+		/*Contains*/public List<User> contains(String compare){
 			List<User> list = new ArrayList<User>();
 			try{
-				contains.setString(1, compare);
+				contains.setString(1, "%"+compare+"%");
 				ResultSet rs = contains.executeQuery();
 				while(rs.next()){
 					list.add(new User(UUID.fromString(rs.getString("uuid")),rs.getString("jsonstore")));
 				}
 				rs = null;
 				return list;
-			}catch(Exception e){}
+			}catch(Exception e){e.printStackTrace();}
 			return null;
 		}
-		
-		/*
-		public void prepareStatements() throws SQLException {
-			getAll = connection.prepareStatement("select * from uuid");
-			delete = connection.prepareStatement("delete from Users WHERE ? = ?");
-			insert = connection.prepareStatement("insert into Users values(?,?,?,?)");
-			select1 = connection.prepareStatement("select * from Users WHERE username = ?");
-			updatePassword = connection.prepareStatement("UPDATE Users SET password = ? WHERE username = ?");
-			updateUsername = connection.prepareStatement("UPDATE Users SET username = ? WHERE username = ?");
-			updateDisplayName = connection.prepareStatement("UPDATE Users SET displayname = ? WHERE username = ?");
-			updatePermissions = connection.prepareStatement("UPDATE Users SET permissions = ? WHERE username = ?");
+		/*Create User*/public boolean createUser(UUID uuid, String jsonStore){
+			return createUser(uuid.toString(),jsonStore);
 		}
-		private PreparedStatement getAll;
-		private PreparedStatement delete;
-		private PreparedStatement insert;
-		private PreparedStatement select1;
-		private PreparedStatement updatePassword;
-		private PreparedStatement updatePermissions;
-		private PreparedStatement updateUsername;
-		private PreparedStatement updateDisplayName;
-		public boolean deleteUser(String where, String what) {
+		/*Create User*/public boolean createUser(String uuid, String jsonStore){
 			try{
-				if(where.length() > 40 || what.length() > 40)return false;
-				delete.setString(1, where);
-				delete.setString(2, what);
-				delete.executeUpdate();
-				return true;
-			}catch(Exception e){e.printStackTrace();}
-			return false;
-		}		
-		boolean createUser(String username, String password,String displayname, PermissionsList list){
-			try{
-				if(username.length() > 40)return false;
-				if(password.length() > 40)return false;
-				if(displayname.length() > 40) return false;
-				if(list.permsList.size() > 40) return false;
-				select1.setString(1, username);
+				select1.setString(1, uuid);
+
 				ResultSet rs = select1.executeQuery();
 				if(rs.next()){return false;}
 
-				insert.setString(1, username);
-				insert.setString(2, password);
-				insert.setString(3, username);
-
-				insert.setObject(4, list.toByteArray());
+				insert.setString(1, uuid);
+				insert.setString(2, jsonStore);
 				insert.executeUpdate();
 				rs = null;
 				return true;
 			}catch(Exception e){e.printStackTrace();}
 			return false;
 		}
-		public User validateUser(String username, String password){
-			try{
-				if(username.length() > 40)return null;
-				if(password.length() > 40)return null;
-				//ResultSet rs = sqld.getStatement().executeQuery("select * from Users WHERE username = '"+username+"'");
-				select1.setString(1, username);
-				ResultSet rs = select1.executeQuery();
-				while(rs.next()){
-					if(rs.getString("password").equals(password)){
-						return new User(
-								rs.getString("username"),
-								rs.getString("password"),
-								rs.getString("displayname"),
-								PermissionsList.fromByteArray(rs.getBytes("permissions"))
-								);
-					}
-				}
-				rs = null;
-			}catch(Exception e){e.printStackTrace();}
-			return null;
+		/*Update JSON*/public boolean updateJson(UUID uuid, String newJson){
+			return updateJson(uuid.toString(),newJson);
 		}
-		public List<User> getUsers(){
-			List<User> list = new ArrayList<User>();
+		/*Update JSON*/public boolean updateJson(String uuid, String newJson){
 			try{
-				ResultSet rs = getAll.executeQuery();
-				while(rs.next()){list.add(
-						new User(
-								rs.getString("username"),
-								rs.getString("password"),
-								rs.getString("displayname"),
-								PermissionsList.fromByteArray(rs.getBytes("permissions"))
-								)
-						);
-				}
-				rs = null;
-				return list;
-			}catch(Exception e){}
-			return null;
-		}
-		public boolean changePassword(String username, String oldPassword, String newPassword){
-			try{
-				if(username.length() > 40)return false;
-				if(newPassword.length() > 40)return false;
-				if(oldPassword.length() > 40)return false;
-				select1.setString(1, username);
+				select1.setString(1, uuid);
 				ResultSet rs = select1.executeQuery();
-				while(rs.next()){
-					if(rs.getString("username").equals(username)&&rs.getString("password").equals(oldPassword)){
-						updatePassword.setString(1, newPassword);
-						updatePassword.setString(2, username);
-						updatePassword.executeUpdate();
-						return true;
-					}
-				}
+				if(!rs.next()){return false;}
+				try{
+					updateJson.setString(1, newJson);
+					updateJson.setString(2, uuid);
+					updateJson.executeUpdate();
+					return true;
+				}catch(Exception e){}
 			}catch(Exception e){e.printStackTrace();}
 			return false;
+
 		}
-		public boolean changePassword(String username, String newPassword){
-			try{
-				if(username.length() > 40)return false;
-				if(newPassword.length() > 40)return false;
-				select1.setString(1, username);
-				ResultSet rs = select1.executeQuery();
-				while(rs.next()){
-					if(rs.getString("username").equals(username)){
-						updatePassword.setString(1, newPassword);
-						updatePassword.setString(2, username);
-						updatePassword.executeUpdate();
-						return true;
-					}
-				}
-			}catch(Exception e){e.printStackTrace();}
-			return false;
-		}
-		public boolean changePermissions(String username, PermissionsList list){
-			try{
-				if(username.length() > 40)return false;
-				select1.setString(1, username);
-				ResultSet rs = select1.executeQuery();
-				while(rs.next()){
-					if(rs.getString("username").equals(username)){
-						updatePermissions.setBytes(1, list.toByteArray());
-						updatePermissions.setString(2, username);
-						updatePermissions.executeUpdate();
-						return true;
-					}
-				}
-			}catch(Exception e){e.printStackTrace();}
-			return false;
-		}
-		public boolean changeDisplayName(String username, String displayname){
-			try{
-				if(username.length() > 40)return false;
-				select1.setString(1, username);
-				ResultSet rs = select1.executeQuery();
-				while(rs.next()){
-					if(rs.getString("username").equals(username)){
-						updateDisplayName.setString(1, displayname);
-						updateDisplayName.setString(2, username);
-						updateDisplayName.executeUpdate();
-						return true;
-					}
-				}
-			}catch(Exception e){e.printStackTrace();}
-			return false;
-		}
-		public boolean changeUsername(String username, String newUsername){
-			try{
-				if(newUsername.length() > 40)return false;
-				if(username.length() > 40) return false;
-				select1.setString(1, newUsername);
-				ResultSet rs = select1.executeQuery();
-				if(rs.next())return false;
-				updateUsername.setString(1, newUsername);
-				updateUsername.setString(2, username);
-				updateUsername.executeUpdate();
-				return true;
-			}catch(Exception e){e.printStackTrace();}
-			return false;
-		}
-		//*/
-		//	PreparedStatement ps2 = prepareStatement("delete from Users WHERE username = ?");
+
 		private UserDatabase(File f) throws ClassNotFoundException, SQLException {
 			Load(f); //setup 
 		}
-		
+
 	}
-	
+
 	public static class User{	
+		
 		private String dataStore= null;
 		public String getDataStore(){return dataStore;}
 		public void setDataStore(String o){dataStore = o;}
-		
+
 		private UUID usersID;
 		public UUID getID(){return usersID;}
-		
+
 		public boolean save(){
 			//TODO-Add A Save Functionality.
 			return false;
 		}
-		
+
 		public User(UUID id, String data){
 			dataStore = data;
 			usersID = id;
 		}
-	
+		
 	}
-	
+
 }
